@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fix-It — AI DIY Live Assistant
 
-## Getting Started
+A next-generation real-time AI agent that helps you fix things by **seeing** through your camera and **talking** with you naturally. Point your webcam at a broken appliance, tangled wires, or confusing furniture instructions — and get step-by-step guidance through a live voice conversation.
 
-First, run the development server:
+Built for the **Gemini API Developer Challenge** (Category: **Live Agents**)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Features
+
+- **Real-Time Vision:** Streams live video frames to Gemini so the AI can see exactly what you see.
+- **Natural Voice Conversation:** Uses the Gemini Live API for fluid, real-time spoken dialogue.
+- **Interrupt Anytime:** The Live API supports voice activity detection — interrupt the AI mid-sentence and it adapts instantly.
+- **Text Input:** Can also type messages if you prefer text-based interaction.
+- **Live Transcript:** All conversation is logged in a real-time transcript panel.
+- **Google Cloud Ready:** Dockerized and deployable to Cloud Run with a single script.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Frontend** | Next.js 16, React 19, Tailwind CSS 4 |
+| **Backend** | Node.js, custom HTTP + WebSocket server |
+| **AI Model** | `gemini-2.5-flash-native-audio-latest` (Gemini Live API) |
+| **SDK** | `@google/genai` (Google Gen AI SDK) |
+| **Cloud** | Google Cloud Run, Cloud Build |
+
+## Architecture
+
+```
+Browser (Next.js)                    Server (Node.js)                 Google Cloud
+┌─────────────────┐    WebSocket    ┌──────────────────┐   WebSocket   ┌─────────────┐
+│  Webcam + Mic   │───────────────▶│  Custom Server   │─────────────▶│  Gemini     │
+│  (MediaStream)  │                │  (HTTP + WS)     │              │  Live API   │
+│                 │◀───────────────│                  │◀─────────────│             │
+│  Audio Playback │    JSON/PCM    │  Proxy + Next.js │   Audio/Text │             │
+└─────────────────┘                └──────────────────┘              └─────────────┘
+                                          │
+                                          │ Deployed on
+                                          ▼
+                                   Google Cloud Run
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Local Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
+- Node.js 20+
+- A Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Steps
 
-## Learn More
+1. **Clone the repository:**
+   ```bash
+   git clone <YOUR_REPO_URL>
+   cd gemini_challenge_devpost
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. **Configure your API key:**
+   ```bash
+   cp .env.example .env
+   # Edit .env and add your GEMINI_API_KEY
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
 
-## Deploy on Vercel
+5. **Open the app:**
+   Navigate to [http://localhost:8080](http://localhost:8080), click **Start Live Session**, allow camera/mic permissions, and start talking.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Google Cloud Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project includes automated deployment via `deploy.sh`:
+
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+The script will:
+1. Enable Cloud Run, Cloud Build, and Container Registry APIs
+2. Build the Docker image via Cloud Build
+3. Deploy to Cloud Run with public access on port 8080
+
+After deployment, add your API key as a secret:
+```bash
+gcloud run services update fixit-live-agent \
+  --set-env-vars="GEMINI_API_KEY=your_key_here" \
+  --region=us-central1
+```
+
+## Project Structure
+
+```
+├── server/
+│   └── index.ts          # Custom HTTP + WebSocket server (Gemini Live proxy)
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx     # Root layout with metadata
+│   │   ├── page.tsx       # Main page
+│   │   └── globals.css    # Global styles
+│   └── components/
+│       └── LiveAgent.tsx   # Core component (video, audio, transcript, text input)
+├── Dockerfile             # Production container
+├── deploy.sh              # Automated Cloud Run deployment
+└── .env.example           # Environment variable template
+```
