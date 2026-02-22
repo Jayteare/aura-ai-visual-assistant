@@ -1,17 +1,28 @@
-# Fix-It — AI DIY Live Assistant
+# Aura — AI Visual Assistant
 
-A next-generation real-time AI agent that helps you fix things by **seeing** through your camera and **talking** with you naturally. Point your webcam at a broken appliance, tangled wires, or confusing furniture instructions — and get step-by-step guidance through a live voice conversation.
+A next-generation real-time AI assistant that can **see** through your camera and **talk** with you naturally. Select a mode, point your webcam at anything, and have a live voice conversation with an AI that adapts to your context.
 
 Built for the **Gemini API Developer Challenge** (Category: **Live Agents**)
 
+## Modes
+
+| Mode | What it does |
+|---|---|
+| **General** | Open-ended assistant — ask about anything you show it |
+| **Fix-It** | DIY repair guidance for appliances, wiring, plumbing, and more |
+| **Game Coach** | Real-time tips and strategies while you play video games |
+| **Explorer** | Describes surroundings, translates signs, identifies landmarks |
+| **Study Buddy** | Explains homework, textbook pages, diagrams, and equations |
+
 ## Features
 
-- **Real-Time Vision:** Streams live video frames to Gemini so the AI can see exactly what you see.
-- **Natural Voice Conversation:** Uses the Gemini Live API for fluid, real-time spoken dialogue.
-- **Interrupt Anytime:** The Live API supports voice activity detection — interrupt the AI mid-sentence and it adapts instantly.
-- **Text Input:** Can also type messages if you prefer text-based interaction.
-- **Live Transcript:** All conversation is logged in a real-time transcript panel.
-- **Google Cloud Ready:** Dockerized and deployable to Cloud Run with a single script.
+- **Real-Time Vision:** Streams live video frames to Gemini so the AI sees what you see
+- **Natural Voice Conversation:** Fluid, real-time spoken dialogue via Gemini Live API
+- **Interrupt Anytime:** Voice activity detection lets you cut the AI off mid-sentence
+- **Text Input:** Type messages when you prefer text-based interaction
+- **Mode Selection:** Switch context with a single click before each session
+- **Live Transcript:** All conversation logged in a scrollable, color-coded panel
+- **Google Cloud Ready:** Dockerized and deployable to Cloud Run with a single script
 
 ## Tech Stack
 
@@ -25,18 +36,18 @@ Built for the **Gemini API Developer Challenge** (Category: **Live Agents**)
 
 ## Architecture
 
+See `public/architecture-diagram.png` for the full visual diagram.
+
 ```
-Browser (Next.js)                    Server (Node.js)                 Google Cloud
-┌─────────────────┐    WebSocket    ┌──────────────────┐   WebSocket   ┌─────────────┐
-│  Webcam + Mic   │───────────────▶│  Custom Server   │─────────────▶│  Gemini     │
-│  (MediaStream)  │                │  (HTTP + WS)     │              │  Live API   │
-│                 │◀───────────────│                  │◀─────────────│             │
-│  Audio Playback │    JSON/PCM    │  Proxy + Next.js │   Audio/Text │             │
-└─────────────────┘                └──────────────────┘              └─────────────┘
-                                          │
-                                          │ Deployed on
-                                          ▼
-                                   Google Cloud Run
+Browser                          Node.js Server                    Google Cloud
+┌──────────────┐   WebSocket    ┌──────────────────┐  WebSocket   ┌──────────────┐
+│ Webcam + Mic │──────────────▶│ HTTP + WS Server │────────────▶│ Gemini 2.5   │
+│ Mode Select  │               │ Session Manager  │             │ Flash Live   │
+│ Text Input   │◀──────────────│ Media Proxy      │◀────────────│ Native Audio │
+│ Audio Player │  JSON / PCM   │                  │  Audio/Text │              │
+└──────────────┘               └──────────────────┘             └──────────────┘
+                                       │
+                                  Cloud Run
 ```
 
 ## Local Setup
@@ -47,46 +58,24 @@ Browser (Next.js)                    Server (Node.js)                 Google Clo
 
 ### Steps
 
-1. **Clone the repository:**
-   ```bash
-   git clone <YOUR_REPO_URL>
-   cd gemini_challenge_devpost
-   ```
+```bash
+git clone <YOUR_REPO_URL>
+cd gemini_challenge_devpost
+npm install
+cp .env.example .env   # Add your GEMINI_API_KEY
+npm run dev
+```
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Configure your API key:**
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your GEMINI_API_KEY
-   ```
-
-4. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
-
-5. **Open the app:**
-   Navigate to [http://localhost:8080](http://localhost:8080), click **Start Live Session**, allow camera/mic permissions, and start talking.
+Open [http://localhost:8080](http://localhost:8080), select a mode, click **Start Live Session**, and start talking.
 
 ## Google Cloud Deployment
-
-This project includes automated deployment via `deploy.sh`:
 
 ```bash
 chmod +x deploy.sh
 ./deploy.sh
 ```
 
-The script will:
-1. Enable Cloud Run, Cloud Build, and Container Registry APIs
-2. Build the Docker image via Cloud Build
-3. Deploy to Cloud Run with public access on port 8080
-
-After deployment, add your API key as a secret:
+Then add your API key:
 ```bash
 gcloud run services update fixit-live-agent \
   --set-env-vars="GEMINI_API_KEY=your_key_here" \
@@ -97,15 +86,20 @@ gcloud run services update fixit-live-agent \
 
 ```
 ├── server/
-│   └── index.ts          # Custom HTTP + WebSocket server (Gemini Live proxy)
+│   └── index.ts           # Custom HTTP + WebSocket server with mode-aware system instructions
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx     # Root layout with metadata
-│   │   ├── page.tsx       # Main page
-│   │   └── globals.css    # Global styles
-│   └── components/
-│       └── LiveAgent.tsx   # Core component (video, audio, transcript, text input)
-├── Dockerfile             # Production container
-├── deploy.sh              # Automated Cloud Run deployment
-└── .env.example           # Environment variable template
+│   │   ├── layout.tsx      # Root layout with metadata
+│   │   ├── page.tsx        # Main page
+│   │   └── globals.css     # Global styles (dark theme)
+│   ├── components/
+│   │   └── LiveAgent.tsx   # Core component (video, audio, transcript, modes, text input)
+│   └── lib/
+│       └── modes.ts        # Mode definitions and system instructions
+├── public/
+│   └── architecture-diagram.png
+├── Dockerfile              # Production container
+├── deploy.sh               # Automated Cloud Run deployment
+├── DEVPOST.md              # Devpost submission text (copy-paste ready)
+└── .env.example            # Environment variable template
 ```

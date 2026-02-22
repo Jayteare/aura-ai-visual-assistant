@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fix-It — AI DIY Live Assistant",
-  description: "Real-time vision + voice AI assistant powered by Gemini Live API. Point your camera and talk.",
+  title: "Aura — AI Visual Assistant",
+  description: "Real-time vision + voice AI assistant powered by Gemini Live API. See, hear, and speak with AI.",
 };
 
 export default function RootLayout({

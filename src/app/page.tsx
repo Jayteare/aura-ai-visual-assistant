@@ -6,12 +6,12 @@ export default function Home() {
       <header className="w-full border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-              FI
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-blue-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-violet-600/20">
+              A
             </div>
             <div>
-              <h1 className="text-lg font-bold text-white leading-tight">Fix-It</h1>
-              <p className="text-xs text-zinc-500 leading-tight">AI Live Assistant</p>
+              <h1 className="text-lg font-bold text-white leading-tight">Aura</h1>
+              <p className="text-xs text-zinc-500 leading-tight">AI Visual Assistant</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-xs text-zinc-500">
