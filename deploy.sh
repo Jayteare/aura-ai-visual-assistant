@@ -1,38 +1,42 @@
 #!/bin/bash
 # =========================================================================
-# Google Cloud Run Deployment Script
-# This script automates the deployment of the Fix-It Live Agent to GCP.
+# Google Cloud Run Deployment Script for Aura
+# Automates building and deploying the container to GCP.
 # Fulfills the "Infrastructure-as-code" bonus point for the Hackathon.
 # =========================================================================
 
-# Ensure script stops on first error
 set -e
 
-# Configuration
-PROJECT_ID=$(gcloud config get-value project)
-SERVICE_NAME="fixit-live-agent"
+PROJECT_ID="aura-488205"
+SERVICE_NAME="aura-live-agent"
 REGION="us-central1"
 IMAGE_TAG="gcr.io/$PROJECT_ID/$SERVICE_NAME"
 
 echo "========================================"
-echo "🚀 Deploying to Google Cloud Run"
-echo "Project ID: $PROJECT_ID"
-echo "Service Name: $SERVICE_NAME"
-echo "Region: $REGION"
+echo "  Deploying Aura to Google Cloud Run"
+echo "  Project: $PROJECT_ID"
+echo "  Service: $SERVICE_NAME"
+echo "  Region:  $REGION"
 echo "========================================"
 
-# 1. Enable necessary Google Cloud Services
-echo "1️⃣ Enabling necessary APIs (Cloud Run, Cloud Build, Container Registry)..."
+# Set the active project
+gcloud config set project $PROJECT_ID
+
+# 1. Enable necessary APIs
+echo ""
+echo "[1/3] Enabling APIs..."
 gcloud services enable run.googleapis.com \
     cloudbuild.googleapis.com \
     containerregistry.googleapis.com
 
-# 2. Build the Docker image using Cloud Build
-echo "2️⃣ Building Docker image via Cloud Build..."
+# 2. Build Docker image via Cloud Build
+echo ""
+echo "[2/3] Building Docker image via Cloud Build..."
 gcloud builds submit --tag $IMAGE_TAG
 
 # 3. Deploy to Cloud Run
-echo "3️⃣ Deploying container to Cloud Run..."
+echo ""
+echo "[3/3] Deploying to Cloud Run..."
 gcloud run deploy $SERVICE_NAME \
     --image $IMAGE_TAG \
     --platform managed \
@@ -41,7 +45,12 @@ gcloud run deploy $SERVICE_NAME \
     --port 8080 \
     --set-env-vars="NODE_ENV=production"
 
-# Note: You should add your GEMINI_API_KEY as a secret manually in the console or via CLI:
-# gcloud run deploy $SERVICE_NAME --update-secrets=GEMINI_API_KEY=YOUR_SECRET:latest
-
-echo "✅ Deployment successful!"
+echo ""
+echo "========================================"
+echo "  Deployment complete!"
+echo ""
+echo "  IMPORTANT: Add your Gemini API key:"
+echo "  gcloud run services update $SERVICE_NAME \\"
+echo "    --set-env-vars=\"GEMINI_API_KEY=your_key\" \\"
+echo "    --region=$REGION"
+echo "========================================"
