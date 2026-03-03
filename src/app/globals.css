@@ -43,3 +43,36 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #52525b;
 }
+
+/* ---- Mobile Polish ---- */
+
+/* Dynamic viewport height (accounts for mobile address bar) */
+.h-dvh {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Safe-area padding for notched phones */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Transcript overlay slide-up animation */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out forwards;
+}
+
+/* Transcript overlay backdrop gradient */
+.transcript-overlay-backdrop {
+  background: linear-gradient(
+    to top,
+    rgba(9, 9, 11, 0.95) 0%,
+    rgba(9, 9, 11, 0.7) 70%,
+    transparent 100%
+  );
+}

@@ -17,6 +17,7 @@ export default function LiveAgent() {
   const [isSwitchingCamera, setIsSwitchingCamera] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [textInput, setTextInput] = useState("");
+  const [showTranscript, setShowTranscript] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedVideoDeviceId, setSelectedVideoDeviceId] = useState<string>("");
@@ -339,11 +340,56 @@ export default function LiveAgent() {
     error: "Error",
   };
 
+  const TranscriptMessages = () => (
+    <>
+      {messages.length === 0 ? (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-zinc-600 text-sm text-center">
+            Start a session to begin.
+          </p>
+        </div>
+      ) : (
+        messages.map((m, i) => (
+          <div key={i} className={`p-3 rounded-lg text-sm border animate-fade-in ${roleStyles[m.role]}`}>
+            <span className="font-semibold text-[11px] uppercase tracking-wider opacity-70 block mb-1">
+              {roleLabels[m.role]}
+            </span>
+            {m.text}
+          </div>
+        ))
+      )}
+      <div ref={messagesEndRef} />
+    </>
+  );
+
+  const TranscriptInput = () =>
+    isConnected ? (
+      <div className="px-4 py-3 border-t border-zinc-800 shrink-0">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={textInput}
+            onChange={(e) => setTextInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            className="flex-1 bg-zinc-800 text-white text-sm rounded-lg px-4 py-2.5 ring-1 ring-zinc-700 focus:ring-violet-500 focus:outline-none placeholder:text-zinc-500 transition-all"
+          />
+          <button
+            onClick={sendText}
+            disabled={!textInput.trim()}
+            className="px-4 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-sm font-medium rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed"
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    ) : null;
+
   return (
-    <div className="flex flex-col gap-6 w-full">
-      {/* Toolbar when connected */}
+    <div className="flex flex-col gap-2 sm:gap-6 w-full h-full">
+      {/* Desktop toolbar — hidden on mobile */}
       {isConnected && (
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
           <button
             onClick={switchCamera}
             disabled={isSwitchingCamera}
@@ -351,6 +397,16 @@ export default function LiveAgent() {
             title="Switch camera"
           >
             {isSwitchingCamera ? "Switching..." : "Switch Camera"}
+          </button>
+          <button
+            onClick={() => setShowTranscript((v) => !v)}
+            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all ring-1 cursor-pointer ${
+              showTranscript
+                ? "bg-violet-600/20 text-violet-300 ring-violet-500/50 hover:bg-violet-600/30"
+                : "bg-zinc-800 text-zinc-300 ring-zinc-700 hover:bg-zinc-700"
+            }`}
+          >
+            {showTranscript ? "Hide Transcript" : "Show Transcript"}
           </button>
           <button
             onClick={disconnect}
@@ -361,18 +417,60 @@ export default function LiveAgent() {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-11rem)] min-h-0">
+      <div className="relative flex flex-col lg:flex-row gap-2 sm:gap-6 flex-1 lg:h-[calc(100dvh-11rem)] min-h-0">
         {/* Left: Video */}
-        <div className="flex flex-col gap-4 lg:w-3/5 min-h-0">
-          <div className="relative bg-zinc-900 rounded-xl overflow-hidden shadow-2xl ring-1 ring-zinc-800 aspect-video">
+        <div className={`flex flex-col gap-2 sm:gap-4 min-h-0 flex-1 ${showTranscript ? "lg:w-3/5" : "w-full"}`}>
+          <div className={`relative bg-zinc-900 overflow-hidden shadow-2xl ${
+            isConnected
+              ? "rounded-none sm:rounded-xl ring-0 sm:ring-1 sm:ring-zinc-800 flex-1 sm:aspect-video sm:flex-none"
+              : "rounded-xl ring-1 ring-zinc-800 aspect-video"
+          }`}>
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
             <canvas ref={canvasRef} className="hidden" />
 
             {isConnected && (
-              <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full ring-1 ring-white/10">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                <span className="text-[11px] text-white font-semibold tracking-wide uppercase">Live</span>
-              </div>
+              <>
+                <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full ring-1 ring-white/10 z-10">
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  <span className="text-[11px] text-white font-semibold tracking-wide uppercase">Live</span>
+                </div>
+
+                {/* Mobile floating controls */}
+                <div className="absolute bottom-4 left-0 right-0 flex sm:hidden items-center justify-center gap-4 safe-bottom z-10">
+                  <button
+                    onClick={switchCamera}
+                    disabled={isSwitchingCamera}
+                    className="w-12 h-12 flex items-center justify-center rounded-full bg-black/60 backdrop-blur-md text-white ring-1 ring-white/20 active:bg-white/20 disabled:opacity-40 transition-all"
+                    title="Switch camera"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setShowTranscript((v) => !v)}
+                    className={`w-12 h-12 flex items-center justify-center rounded-full backdrop-blur-md ring-1 active:bg-white/20 transition-all ${
+                      showTranscript
+                        ? "bg-violet-600/40 text-violet-200 ring-violet-400/50"
+                        : "bg-black/60 text-white ring-white/20"
+                    }`}
+                    title="Toggle transcript"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={disconnect}
+                    className="w-12 h-12 flex items-center justify-center rounded-full bg-red-600/80 backdrop-blur-md text-white ring-1 ring-red-400/30 active:bg-red-500 transition-all"
+                    title="End session"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 5.636a9 9 0 1 0 12.728 0M12 3v9" />
+                    </svg>
+                  </button>
+                </div>
+              </>
             )}
 
             {!isConnected && !isConnecting && (
@@ -390,10 +488,10 @@ export default function LiveAgent() {
                 </div>
 
                 {/* Camera toggle */}
-                <div className="flex items-center gap-1 bg-zinc-900 ring-1 ring-zinc-800 rounded-lg p-1">
+                <div className="flex items-center gap-1 bg-zinc-900 ring-1 ring-zinc-800 rounded-lg p-1.5">
                   <button
                     onClick={() => { setFacingMode("user"); setSelectedVideoDeviceId(""); }}
-                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                    className={`px-4 py-2.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                       facingMode === "user" && !selectedVideoDeviceId ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-zinc-200"
                     }`}
                   >
@@ -401,7 +499,7 @@ export default function LiveAgent() {
                   </button>
                   <button
                     onClick={() => { setFacingMode("environment"); setSelectedVideoDeviceId(""); }}
-                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                    className={`px-4 py-2.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                       facingMode === "environment" && !selectedVideoDeviceId ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-zinc-200"
                     }`}
                   >
@@ -411,7 +509,7 @@ export default function LiveAgent() {
 
                 <button
                   onClick={connect}
-                  className="px-8 py-3 bg-gradient-to-r from-violet-600 to-blue-500 hover:from-violet-500 hover:to-blue-400 text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-600/25 cursor-pointer"
+                  className="px-8 py-3.5 sm:py-3 bg-gradient-to-r from-violet-600 to-blue-500 hover:from-violet-500 hover:to-blue-400 text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-600/25 cursor-pointer text-base sm:text-sm"
                 >
                   Start Live Session
                 </button>
@@ -427,59 +525,51 @@ export default function LiveAgent() {
           </div>
         </div>
 
-        {/* Right: Transcript + Input */}
-        <div className="flex flex-col lg:w-2/5 min-h-0">
-          <div className="bg-zinc-900 rounded-xl ring-1 ring-zinc-800 flex flex-col h-[40vh] sm:h-[360px] lg:h-full min-h-0">
-            <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between shrink-0">
-              <h3 className="text-sm font-semibold text-zinc-300">Transcript</h3>
-              <span className="text-[11px] text-zinc-600">
-                {messages.filter((m) => m.role !== "system").length} messages
-              </span>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 min-h-0">
-              {messages.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-zinc-600 text-sm text-center">
-                    Start a session to begin.
-                  </p>
-                </div>
-              ) : (
-                messages.map((m, i) => (
-                  <div key={i} className={`p-3 rounded-lg text-sm border animate-fade-in ${roleStyles[m.role]}`}>
-                    <span className="font-semibold text-[11px] uppercase tracking-wider opacity-70 block mb-1">
-                      {roleLabels[m.role]}
-                    </span>
-                    {m.text}
-                  </div>
-                ))
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {isConnected && (
-              <div className="px-4 py-3 border-t border-zinc-800 shrink-0">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={textInput}
-                    onChange={(e) => setTextInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Type a message..."
-                    className="flex-1 bg-zinc-800 text-white text-sm rounded-lg px-4 py-2.5 ring-1 ring-zinc-700 focus:ring-violet-500 focus:outline-none placeholder:text-zinc-500 transition-all"
-                  />
+        {/* Transcript panel */}
+        {showTranscript && (
+          <>
+            {/* Mobile: slide-up overlay */}
+            <div className="sm:hidden absolute inset-0 z-20 flex flex-col justify-end animate-slide-up">
+              <div
+                className="flex-1 transcript-overlay-backdrop"
+                onClick={() => setShowTranscript(false)}
+              />
+              <div className="bg-zinc-900 rounded-t-2xl ring-1 ring-zinc-800 flex flex-col h-[60vh] min-h-0 safe-bottom">
+                <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between shrink-0">
+                  <h3 className="text-sm font-semibold text-zinc-300">Transcript</h3>
                   <button
-                    onClick={sendText}
-                    disabled={!textInput.trim()}
-                    className="px-4 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-sm font-medium rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed"
+                    onClick={() => setShowTranscript(false)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-800 text-zinc-500 transition-colors"
                   >
-                    Send
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </div>
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 min-h-0">
+                  <TranscriptMessages />
+                </div>
+                <TranscriptInput />
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+
+            {/* Desktop: sidebar */}
+            <div className="hidden sm:flex flex-col lg:w-2/5 min-h-0">
+              <div className="bg-zinc-900 rounded-xl ring-1 ring-zinc-800 flex flex-col h-[360px] lg:h-full min-h-0">
+                <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between shrink-0">
+                  <h3 className="text-sm font-semibold text-zinc-300">Transcript</h3>
+                  <span className="text-[11px] text-zinc-600">
+                    {messages.filter((m) => m.role !== "system").length} messages
+                  </span>
+                </div>
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 min-h-0">
+                  <TranscriptMessages />
+                </div>
+                <TranscriptInput />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
